@@ -45,7 +45,7 @@ jobs:
       # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
       - name: Terraform Init
         run: terraform init -backend-config=resource_group_name=${{ secrets.StateStoreRGName}} -backend-config=storage_account_name=${{ secrets.StorageAccountName }} -backend-config=container_name=${{ secrets.StateStoreContainerName }} -backend-config=key=${{ secrets.StateStoreFilename }}-${{ github.run_number}}
-        working-directory: 'scenarios/aca-internal/terraform/'
+        working-directory: ./scenarios/aca-internal/terraform
         env:
              ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
              ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID  }}
@@ -55,7 +55,7 @@ jobs:
       # Generates an execution plan for Terraform
       - name: Terraform Plan
         run: terraform plan -out=tf_plan -var-file="variables.tfvars"
-        working-directory: 'scenarios/aca-internal/terraform/'
+        working-directory: ./scenarios/aca-internal/terraform
         env:
              ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
              ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID  }}
@@ -66,7 +66,7 @@ jobs:
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve tf_plan
-        working-directory: 'scenarios/aca-internal/terraform/'
+        working-directory: ./scenarios/aca-internal/terraform
         env:
              ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
              ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID  }}
@@ -75,6 +75,7 @@ jobs:
   destroy:
         runs-on: ubuntu-latest
         environment: terraform
+        needs: [deploy]
         steps:
           - uses: actions/checkout@v4
 
@@ -94,7 +95,7 @@ jobs:
           # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
           - name: Terraform Init
             run: terraform init -backend-config=resource_group_name=${{ secrets.StateStoreRGName}} -backend-config=storage_account_name=${{ secrets.StorageAccountName }} -backend-config=container_name=${{ secrets.StateStoreContainerName }} -backend-config=key=${{ secrets.StateStoreFilename }}
-            working-directory: 'scenarios/aca-internal/terraform/'
+            working-directory: ./scenarios/aca-internal/terraform
             env:
                  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
                  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID  }}
@@ -104,7 +105,7 @@ jobs:
           # Generates an execution plan for Terraform
           - name: Terraform Plan
             run: terraform plan -out=tf_plan -var-file="variables.tfvars"
-            working-directory: 'scenarios/aca-internal/terraform/'
+            working-directory: ./scenarios/aca-internal/terraform
             env:
                  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
                  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID  }}
@@ -115,7 +116,7 @@ jobs:
           - name: Terraform Destroy
             if: github.ref == 'refs/heads/main' && github.event_name == 'push'
             run: terraform destroy -auto-approve
-            working-directory: 'scenarios/aca-internal/terraform/'
+            working-directory: ./scenarios/aca-internal/terraform
             env:
                  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
                  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID  }}
