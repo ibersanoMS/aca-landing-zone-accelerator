@@ -1,11 +1,11 @@
-output "applicationGatewayPublicIp" {
+#output "applicationGatewayPublicIp" {
   value = module.applicationGateway.applicationGatewayPublicIp
 }
 
-output "hubResourceGroupName" {
+#output "hubResourceGroupName" {
   value = module.hub.hubResourceGroupName
 }
 
-output "spokeResourceGroupName" {
+#output "spokeResourceGroupName" {
   value = module.spoke.spokeResourceGroupName
 }
