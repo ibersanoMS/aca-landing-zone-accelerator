@@ -44,7 +44,7 @@ jobs:
 
       # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
       - name: Terraform Init
-        run: terraform init -backend-config=resource_group_name=${{ secrets.StateStoreRGName}} -backend-config=storage_account_name=${{ secrets.StorageAccountName }} -backend-config=container_name=${{ secrets.StateStoreContainerName }} -backend-config=key=${{ secrets.StateStorePrefix }}-${{ github.run_number}}.tfstate
+        run: terraform init -backend-config=resource_group_name=${{ secrets.StateStoreRGName}} -backend-config=storage_account_name=${{ secrets.StorageAccountName }} -backend-config=container_name=${{ secrets.StateStoreContainerName }} -backend-config=key=${{ secrets.StateStorePrefix }}.tfstate
         working-directory: ./scenarios/aca-internal/terraform
         env:
              ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -93,7 +93,7 @@ jobs:
 
           # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
           - name: Terraform Init
-            run: terraform init -backend-config=resource_group_name=${{ secrets.StateStoreRGName}} -backend-config=storage_account_name=${{ secrets.StorageAccountName }} -backend-config=container_name=${{ secrets.StateStoreContainerName }} -backend-config=key=${{ secrets.StateStorePrefix }}-${{ github.run_number}}.tfstate
+            run: terraform init -backend-config=resource_group_name=${{ secrets.StateStoreRGName}} -backend-config=storage_account_name=${{ secrets.StorageAccountName }} -backend-config=container_name=${{ secrets.StateStoreContainerName }} -backend-config=key=${{ secrets.StateStorePrefix }}.tfstate
             working-directory: ./scenarios/aca-internal/terraform
             env:
                  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
