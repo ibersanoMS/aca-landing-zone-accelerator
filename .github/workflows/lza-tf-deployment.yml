@@ -1,0 +1,124 @@
+# This workflow will deploy the Terraform version of the LZA
+name: Terraform LZA Deployment
+
+on:
+  push:   
+    branches: 
+      - main
+    paths:
+      - 'scenarios/aca-internal/terraform/**'
+      - '!scenarios/aca-internal/terraform/**.md'
+  
+  pull_request:
+    branches: 
+      - main
+    paths:
+      - 'scenarios/aca-internal/terraform/**'
+      - '!scenarios/aca-internal/terraform/**.md'
+  
+  workflow_dispatch:
+
+permissions:
+      id-token: write
+      contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: terraform
+    steps:
+      - uses: actions/checkout@v4
+
+      # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3    
+        with: 
+          terraform_wrapper: false
+
+      - uses: azure/login@v2
+        name: Sign in to Azure
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+      - name: Terraform Init
+        run: terraform init -backend-config=resource_group_name=${{ secrets.StateStoreRGName}} -backend-config=storage_account_name=${{ secrets.StorageAccountName }} -backend-config=container_name=${{ secrets.StateStoreContainerName }} -backend-config=key=${{ secrets.StateStoreFilename }}-${{ github.run_number}}
+        working-directory: 'scenarios/aca-internal/terraform/'
+        env:
+             ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+             ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID  }}
+             ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+             ARM_USE_OIDC: true
+
+      # Generates an execution plan for Terraform
+      - name: Terraform Plan
+        run: terraform plan -out=tf_plan -var-file="variables.tfvars"
+        working-directory: 'scenarios/aca-internal/terraform/'
+        env:
+             ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+             ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID  }}
+             ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+             ARM_USE_OIDC: true
+
+        # On push to master, build or change infrastructure according to Terraform configuration files
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve tf_plan
+        working-directory: 'scenarios/aca-internal/terraform/'
+        env:
+             ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+             ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID  }}
+             ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+             ARM_USE_OIDC: true
+  destroy:
+        runs-on: ubuntu-latest
+        environment: terraform
+        steps:
+          - uses: actions/checkout@v4
+
+          # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+          - name: Setup Terraform
+            uses: hashicorp/setup-terraform@v3    
+            with: 
+              terraform_wrapper: false
+
+          - uses: azure/login@v2
+            name: Sign in to Azure
+            with:
+              client-id: ${{ secrets.AZURE_CLIENT_ID }}
+              tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+              subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+          # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+          - name: Terraform Init
+            run: terraform init -backend-config=resource_group_name=${{ secrets.StateStoreRGName}} -backend-config=storage_account_name=${{ secrets.StorageAccountName }} -backend-config=container_name=${{ secrets.StateStoreContainerName }} -backend-config=key=${{ secrets.StateStoreFilename }}
+            working-directory: 'scenarios/aca-internal/terraform/'
+            env:
+                 ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+                 ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID  }}
+                 ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+                 ARM_USE_OIDC: true
+
+          # Generates an execution plan for Terraform
+          - name: Terraform Plan
+            run: terraform plan -out=tf_plan -var-file="variables.tfvars"
+            working-directory: 'scenarios/aca-internal/terraform/'
+            env:
+                 ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+                 ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID  }}
+                 ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+                 ARM_USE_OIDC: true
+
+          # On pull request, build or change infrastructure according to Terraform configuration files
+          - name: Terraform Destroy
+            if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+            run: terraform destroy -auto-approve
+            working-directory: 'scenarios/aca-internal/terraform/'
+            env:
+                 ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+                 ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID  }}
+                 ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+                 ARM_USE_OIDC: true
+
