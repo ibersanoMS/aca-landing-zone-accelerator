@@ -44,7 +44,7 @@ jobs:
 
       # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
       - name: Terraform Init
-        run: terraform init -backend-config=resource_group_name=${{ secrets.StateStoreRGName}} -backend-config=storage_account_name=${{ secrets.StorageAccountName }} -backend-config=container_name=${{ secrets.StateStoreContainerName }} -backend-config=key=${{ secrets.StateStorePrefix }}-${{ github.run_number}}
+        run: terraform init -backend-config=resource_group_name=${{ secrets.StateStoreRGName}} -backend-config=storage_account_name=${{ secrets.StorageAccountName }} -backend-config=container_name=${{ secrets.StateStoreContainerName }} -backend-config=key=${{ secrets.StateStorePrefix }}-${{ github.run_number}}.tfstate
         working-directory: ./scenarios/aca-internal/terraform
         env:
              ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -64,7 +64,6 @@ jobs:
 
         # On push to master, build or change infrastructure according to Terraform configuration files
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve tf_plan
         working-directory: ./scenarios/aca-internal/terraform
         env:
@@ -94,17 +93,7 @@ jobs:
 
           # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
           - name: Terraform Init
-            run: terraform init -backend-config=resource_group_name=${{ secrets.StateStoreRGName}} -backend-config=storage_account_name=${{ secrets.StorageAccountName }} -backend-config=container_name=${{ secrets.StateStoreContainerName }} -backend-config=key=${{ secrets.StateStorePrefix }}-${{ github.run_number}}
-            working-directory: ./scenarios/aca-internal/terraform
-            env:
-                 ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-                 ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID  }}
-                 ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-                 ARM_USE_OIDC: true
-
-          # Generates an execution plan for Terraform
-          - name: Terraform Plan
-            run: terraform plan -out=tf_plan -var-file="terraform.tfvars"
+            run: terraform init -backend-config=resource_group_name=${{ secrets.StateStoreRGName}} -backend-config=storage_account_name=${{ secrets.StorageAccountName }} -backend-config=container_name=${{ secrets.StateStoreContainerName }} -backend-config=key=${{ secrets.StateStorePrefix }}-${{ github.run_number}}.tfstate
             working-directory: ./scenarios/aca-internal/terraform
             env:
                  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -114,12 +103,30 @@ jobs:
 
           # On pull request, build or change infrastructure according to Terraform configuration files
           - name: Terraform Destroy
-            if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-            run: terraform destroy -auto-approve
+            run: terraform destroy -auto-approve -var-file="terraform.tfvars" -var "clientIP="""
             working-directory: ./scenarios/aca-internal/terraform
             env:
                  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
                  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID  }}
                  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
                  ARM_USE_OIDC: true
+                 
+          - name: Azure Login
+            uses: azure/login@v2
+            with:
+              client-id: ${{ secrets.AZURE_CLIENT_ID }}
+              tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+              subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+          - name: Delete Terraform State File
+            shell: pwsh
+            run: |
+                Try
+                {
+                  $exists = az storage blob exists --account-name ${{ env.StorageAccountName }} --container-name ${{ env.StateStoreContainerName }} --name ${{ secrets.StateStorePrefix }}-${{ github.run_number}}.tfstate --auth-mode login
+                }
+                Catch
+                {
+                  Write-output "No state file to delete"
+                }
 
