@@ -2,7 +2,7 @@
 # value = module.applicationGateway.applicationGatewayPublicIp
 #}
 
-#output "hubResourceGroupName" {
+output "hubResourceGroupName" {
   value = module.hub.hubResourceGroupName
 }
 
