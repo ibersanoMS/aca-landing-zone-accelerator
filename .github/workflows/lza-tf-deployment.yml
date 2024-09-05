@@ -54,7 +54,7 @@ jobs:
 
       # Generates an execution plan for Terraform
       - name: Terraform Plan
-        run: terraform plan -out=tf_plan -var-file="variables.tfvars"
+        run: terraform plan -out=tf_plan -var-file="terraform.tfvars" -var "clientIP="""
         working-directory: ./scenarios/aca-internal/terraform
         env:
              ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -104,7 +104,7 @@ jobs:
 
           # Generates an execution plan for Terraform
           - name: Terraform Plan
-            run: terraform plan -out=tf_plan -var-file="variables.tfvars"
+            run: terraform plan -out=tf_plan -var-file="terraform.tfvars"
             working-directory: ./scenarios/aca-internal/terraform
             env:
                  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
